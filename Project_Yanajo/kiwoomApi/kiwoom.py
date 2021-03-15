@@ -1,10 +1,6 @@
 from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
-<<<<<<< Updated upstream
-from method.errorCode import errors
-=======
 from config.errorCode import *
->>>>>>> Stashed changes
 # QaxWidget 파이썬 파일중 컨테이너부분을 직접적으로 접근할수 있는 API로 서비스.서비스임플.맵퍼.DB (구현부안에 상속된건 아님) 추정됨
 class Kiwoom(QAxWidget):
 
@@ -29,15 +25,12 @@ class Kiwoom(QAxWidget):
 
         ############변수모음###
         self.account_BankNum = None
+        self.sPrevNext = None
         #####################
 
-<<<<<<< Updated upstream
-        self.get_Ocx_Install()
-=======
         #############이벤트 루프 모음
         self.defult_account_info_event_loop = None
         ###########################################
->>>>>>> Stashed changes
 
         self.get_Ocx_Install()
         self.event_List()
@@ -49,9 +42,8 @@ class Kiwoom(QAxWidget):
         # 예수금 조회
         self.deposit_acount_info()
 
-        self.login_slot()
-
-        self.get_account_info()
+        # 계좌평가잔고내역요청 조회
+        self.checkBalance_acount_info()
 
     def get_Ocx_Install(self):
 
@@ -112,23 +104,39 @@ class Kiwoom(QAxWidget):
         # 현재 계좌번호
         print('현재 계좌 번호 %s' % self.account_BankNum)
 
-    # 예수금 요청하는 부분
+    # 예수금 요청내역
     def deposit_acount_info(self):
         print('예수금 조회 요청')
 
+        # 조회 함수입력
         self.dynamicCall("SetInputValue(String, String)", "계좌번호", self.account_BankNum) # 계좌번호
         self.dynamicCall("SetInputValue(String, String)", "비밀번호", "0000")
         self.dynamicCall("SetInputValue(String, String)", "비밀번호입력매체구분", "00")
         self.dynamicCall("SetInputValue(String, String)", "조회구분", '2') #2는 일반조회 3은 추정조회
 
-        # 예수금 상세현황요청을 화면번호를 지정함
+        # 예수금 상세현황요청 조회함수 호출하여 서버전송
         self.dynamicCall("CommRqData(String, String, String, String)", "예수금상세현황요청", "opw00001", '0', "2000")
-        print("예수금수행Test")
 
         # 다른데이터를 처리하는동안 다른작업을 할수있게 만드는것 이벤트 루프
         self.defult_account_info_event_loop = QEventLoop()
         self.defult_account_info_event_loop.exec_()
 
+    # 계좌평가잔고내역요청내역, sPrevNext값이 0으로 설정되었기에 싱글데이터값을 요청함함
+    def checkBalance_acount_info(self, sPrevNext="0"):
+        print("계좌평가잔고내역요청")
+
+        self.dynamicCall("SetInputValue(String, String)", "계좌번호", self.account_BankNum)
+        self.dynamicCall("SetInputValue(String, String)", "비밀번호", "0000")
+        self.dynamicCall("SetInputValue(String, String)", "비밀번호입력매체구분", "00")
+        self.dynamicCall("SetInputValue(String, String)", "조회구분", '2')
+
+        # 계좌평가잔고내역요청 조회함수 호출하여 서버전송
+        self.dynamicCall("CommRqData(String, String, String, String)", "계좌평가잔고내역요청", "opw00018", sPrevNext, "2000")
+
+        self.defult_account_info_event_loop = QEventLoop()
+        self.defult_account_info_event_loop.exec_()
+
+    # Tr슬롯
     def trData_slot(self, sScrNo, sRQName, sTrCode,sRecordName,sPrevNext):
         '''
         TR 요청을 받는 구역 (슬롯)
@@ -164,24 +172,25 @@ class Kiwoom(QAxWidget):
             print("출금가능금액 : %s" % ture_deposit)
             print("출금가능금액 형변환 : %d" % int(ture_deposit))
 
-<<<<<<< Updated upstream
-        self.login_exec.exec_() # 이벤트 루프 지정
+            self.defult_account_info_event_loop.exit()
 
-    # 키움 에러처리 key
-    def login_slot(self, errCode):
-        print(errors(errCode))
+        if (sRQName == "계좌평가잔고내역요청"):
 
-        self.login_exec.exec_()
+            # 계좌평가잔고내역요청_총매입금액
+            checkBalance_total_purchase_amount = self.dynamicCall("GetCommData(String, String, String, String)", sTrCode, sRQName, 0, "총매입금액")
+            print('총매입금액 : %s' % checkBalance_total_purchase_amount)
+            print('총매입금액 형변환 : %s' % int(checkBalance_total_purchase_amount))
 
-    # 로그인 버전처리 (계좌번호가져오기)
-    def get_account_info(self):
-        account_list = self.dynamicCall("GetLoginInfo(String)", "ACCNO")
-        account_list = self.dynamicCall("GetLoginInfo(String)", "USER_ID")
+            # 계좌평가잔고내역요청_총평가금액
+            checkBalance_total_evaluation_amount = self.dynamicCall("GetCommData(String, String, String, String)", sTrCode, sRQName, 0, "총평가금액")
+            print('총평가금액 : %s' % checkBalance_total_evaluation_amount)
+            print('총평가금액 형변환 : %s' % int(checkBalance_total_evaluation_amount))
 
-        # split : 문자열 자르기 (계좌번호 가져올때 18545454545;45447878785; 이런식으로 출력됨)
-        account_BankNum = account_list.split(';')
+            # 계좌평가잔고내역요청_총수익률
+            checkBalance_yield = self.dynamicCall("GetCommData(String, String, String, String)", sTrCode, sRQName, 0, "총수익률(%)")
+            print('총수익률(%%) : %s' % checkBalance_yield)
+            print('총수익률(%%) 형변환 : %s' % float(checkBalance_yield),'%')
 
-        print('현재 계좌 번호 %s', account_BankNum)
-=======
-        self.defult_account_info_event_loop.exit()
->>>>>>> Stashed changes
+            self.defult_account_info_event_loop.exit()
+
+
