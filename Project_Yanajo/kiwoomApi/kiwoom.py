@@ -31,7 +31,8 @@ class Kiwoom(QAxWidget):
         #####################
 
         #############스크린 번호 모음
-        self.QscreenNumber      = 2000
+        self.QscreenNumberT      = 2000
+        self.QscreenNumberF      = 4000
 
         ############유저 계좌 접근 변수
         self.userMoney          = None
@@ -147,6 +148,7 @@ class Kiwoom(QAxWidget):
 
         self.defult_account_info_event_loop.exec_()
 
+    # 미체결요청
     def not_tightening_acount_info(self):
         print("미체결요청")
 
@@ -160,6 +162,17 @@ class Kiwoom(QAxWidget):
                          self.QscreenNumber)
 
         self.defult_account_info_event_loop.exec_()
+
+    # 주식일봉차트조회요청
+    def request_to_check_the_stock_pay_chart(self, eventCode = None, date = None, setsPrevNext = 0):
+        print("주식일봉차트조회요청")
+
+        self.dynamicCall("SetInputValue(QString, QString)", "종목코드", eventCode)
+        self.dynamicCall("SetInputValue(QString, QString)", "기준일자", date)
+        self.dynamicCall("SetInputValue(QString, QString)", "수정주가구분", setsPrevNext)
+
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회요청", "opt10081", setsPrevNext, self.QscreenNumberF)
+
 
     # Tr슬롯
     def trData_slot(self, sScrNo, sRQName, sTrCode,sRecordName,sPrevNext):
