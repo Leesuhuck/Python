@@ -129,11 +129,11 @@ class Kiwoom(QAxWidget):
                          '0', self.QscreenNumber)
 
         # 다른데이터를 처리하는동안 다른작업을 할수있게 만드는것 이벤트 루프
-        self.defult_account_info_event_loop()
+        self.defult_account_info_event_loop
         self.defult_account_info_event_loop.exec_()
 
     # 계좌평가잔고내역요청내역, sPrevNext값이 0으로 설정되었기에 싱글데이터값을 요청함함
-    def checkBalance_acount_info(self, setsPrevNext="0"):
+    def checkBalance_acount_info(self, setsPrevNext = "0"):
         print("계좌평가잔고내역요청")
 
         self.dynamicCall("SetInputValue(QString, QString)", "계좌번호", self.account_BankNum)
@@ -236,7 +236,7 @@ class Kiwoom(QAxWidget):
             for i in range(cint):
 
                 balance_id                  = self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                                               sTrCode, sRQName, i, "종목코드")
+                                                               sTrCode, sRQName, i, "종목번호")
                 balance_item_nm             = self.dynamicCall("GetCommData(QString, QString, int, QString)",
                                                                sTrCode, sRQName, i, "종목명")
                 balance_retained_quantity   = self.dynamicCall("GetCommData(QString, QString, int, QString)",
@@ -250,7 +250,7 @@ class Kiwoom(QAxWidget):
                 balance_purchase_amount     = self.dynamicCall("GetCommData(QString, QString, int, QString)",
                                                                sTrCode, sRQName, i, "매입금액")
                 balance_tradeable_quantity  = self.dynamicCall("GetCommData(QString, QString, int, QString)",
-                                                               sTrCode, sRQName, i, "매매 가능수량")
+                                                               sTrCode, sRQName, i, "매매가능수량")
 
                 # checkBalance 안에 cint이 있다면
                 if (cint in self.checkBalanceBox):
@@ -259,39 +259,45 @@ class Kiwoom(QAxWidget):
                 else:
 
                     # self.checkBalanceBox[balance_id] = {} 이렇게 사용해도됨
+                    balance_id = balance_id.strip()[1:]
                     self.checkBalanceBox.update({balance_id: {}})
 
                 # strip(공백없애기) 하지만 [1:] 이면 2번째요소(인덱스자리 1)부터 시작한다는뜻
-                balance_id.strip()[1:]
-                balance_item_nm.strip()
-                balance_retained_quantity = int(balance_retained_quantity.strip())
-                balance_purchase_price = int(balance_purchase_price.strip())
-                balance_yield = float(balance_yield.strip())
-                balance_current_price = int(balance_current_price.strip())
-                balance_purchase_amount = int(balance_purchase_amount.strip())
-                balance_tradeable_quantity = int(balance_tradeable_quantity.strip())
+                balance_item_nm             = balance_item_nm.strip()
+                balance_retained_quantity   = int(balance_retained_quantity.strip())
+                balance_purchase_price      = int(balance_purchase_price.strip())
+                balance_yield               = float(balance_yield.strip())
+                balance_current_price       = int(balance_current_price.strip())
+                balance_purchase_amount     = int(balance_purchase_amount.strip())
+                balance_tradeable_quantity  = int(balance_tradeable_quantity.strip())
 
                 checkBalanceBoxSkip = self.checkBalanceBox[balance_id]
 
                 # 종목 코드 해당 id 딕셔너리 안에 그 안에 딕셔너리 추가함
-                checkBalanceBoxSkip.update = {"종목명", balance_item_nm}
-                checkBalanceBoxSkip.update = {"보유수량", balance_retained_quantity}
-                checkBalanceBoxSkip.update = {"매입가", balance_purchase_price}
-                checkBalanceBoxSkip.update = {"수익률(%)", balance_yield}
-                checkBalanceBoxSkip.update = {"현재가", balance_current_price}
-                checkBalanceBoxSkip.update = {"매입금액", balance_purchase_amount}
-                checkBalanceBoxSkip.update = {"매매 가능수량", balance_tradeable_quantity}
+                checkBalanceBoxSkip.update({"종목명": balance_item_nm})
+                checkBalanceBoxSkip.update({"보유수량": balance_retained_quantity})
+                checkBalanceBoxSkip.update({"매입가": balance_purchase_price})
+                checkBalanceBoxSkip.update({"수익률(%)": balance_yield})
+                checkBalanceBoxSkip.update({"현재가": balance_current_price})
+                checkBalanceBoxSkip.update({"매입금액": balance_purchase_amount})
+                checkBalanceBoxSkip.update({"매매가능수량": balance_tradeable_quantity})
 
-            print("현재카운트 : %d" % len(self.checkBalanceBox))
-            print(self.checkBalanceBox)
+                print("종목코드: %s - 종목명: %s - 보유수량: %s - 매입가:%s - 수익률: %s - 현재가: %s" %
+                      (balance_id, balance_item_nm, balance_retained_quantity, balance_purchase_price, balance_yield,
+                       balance_current_price))
 
-            if (sPrevNext == "2"):
+                print("계좌 가지고 있는종목 : %d" % len(self.checkBalanceBox))
 
-                self.checkBalance_acount_info(setsPrevNext = "2")
+                if (sPrevNext == "2"):
 
-            else:
+                    self.checkBalance_acount_info(setsPrevNext = "2")
 
-                self.defult_account_info_event_loop.exit()
+                else:
+
+                    self.defult_account_info_event_loop.exit()
+
+            print(self.checkBalanceBox.keys())
+            print(self.checkBalanceBox.values())
 
         if (sRQName == "미체결요청"):
 
@@ -359,7 +365,7 @@ class Kiwoom(QAxWidget):
 
                 print(self.not_tighteningBox)
 
-                self.defult_account_info_event_loop.exit()
+            self.defult_account_info_event_loop.exit()
 
 
 
