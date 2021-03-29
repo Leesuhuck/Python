@@ -127,7 +127,7 @@ class Kiwoom(QAxWidget):
 
         # 예수금 상세현황요청 조회함수 호출하여 서버전송
         self.dynamicCall("CommRqData(QString, QString, QString, QString)", "예수금상세현황요청", "opw00001",
-                         '0', self.QscreenNumber)
+                         '0', self.QscreenNumberT)
 
         # 다른데이터를 처리하는동안 다른작업을 할수있게 만드는것 이벤트 루프
         self.defult_account_info_event_loop
@@ -144,7 +144,7 @@ class Kiwoom(QAxWidget):
 
         # 계좌평가잔고내역요청 조회함수 호출하여 서버전송
         self.dynamicCall("CommRqData(QString, QString, QString, QString)", "계좌평가잔고내역요청", "opw00018",
-                         setsPrevNext, self.QscreenNumber)
+                         setsPrevNext, self.QscreenNumberF)
 
         self.defult_account_info_event_loop.exec_()
 
