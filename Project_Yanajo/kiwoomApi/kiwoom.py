@@ -1,6 +1,7 @@
-from PyQt5.QAxContainer import *
+from PyQt5.QAxContainer import QAxWidget
 from PyQt5.QtCore import *
 from config.errorCode import *
+from PyQt5.QtTest import QTest
 # QaxWidget 파이썬 파일중 컨테이너부분을 직접적으로 접근할수 있는 API로 서비스.서비스임플.맵퍼.DB (구현부안에 상속된건 아님) 추정됨
 class Kiwoom(QAxWidget):
 
@@ -11,6 +12,7 @@ class Kiwoom(QAxWidget):
     덕분에 제어가 된다.
     제어 할수 있는 함수는 PytQ5
     시그널 = 요청
+    키움 API는 싱글데이터 멀티데이터 Key제목을 꼭 보고 가져와야 된다.
     """
 
     def __init__(self):
@@ -29,6 +31,10 @@ class Kiwoom(QAxWidget):
         self.checkBalanceBox    = {}
         self.not_tighteningBox  = {}
         #####################
+
+        ###########종합일봉리스트########
+        self.onedaypayListData = []
+        ###############################
 
         #############스크린 번호 모음
         self.QscreenNumberT      = 2000
@@ -57,6 +63,9 @@ class Kiwoom(QAxWidget):
         # 계좌평가잔고내역요청 조회
         self.checkBalance_acount_info()
 
+        # 종목분석용, 임시용으로 실행
+        self.calculator_Fn()
+
     def get_Ocx_Install(self):
 
         """
@@ -74,7 +83,7 @@ class Kiwoom(QAxWidget):
         self.OnEventConnect.connect(self.login_slot)
 
         # TR용 이벤트 슬롯연결
-        self.OnReceiveTrData.connect(self.trData_slot) # 여기가 문제인데???
+        self.OnReceiveTrData.connect(self.trData_slot)
 
     # 로그인 성공시 이벤트
     def login_Function(self, nErrCode):
@@ -165,13 +174,53 @@ class Kiwoom(QAxWidget):
 
     # 주식일봉차트조회요청
     def request_to_check_the_stock_pay_chart(self, eventCode = None, date = None, setsPrevNext = 0):
-        print("주식일봉차트조회요청")
+        print("주식일봉차트조회")
+
+        """
+        위 네트워크적인 프로세스를 멈추진 않고 대신에 이상태에서 다음 코드실행하기 전에 4초 지연합니다. (보안상 3.5초 이상 지연)
+        너무 느리지만 이점을 보완할 방법이 딱히 없다.
+        그리고 키움은 매일 새벽마다 업데이트를 한다.
+        """
+        QTest.qWait(4000)
 
         self.dynamicCall("SetInputValue(QString, QString)", "종목코드", eventCode)
-        self.dynamicCall("SetInputValue(QString, QString)", "기준일자", date)
-        self.dynamicCall("SetInputValue(QString, QString)", "수정주가구분", setsPrevNext)
+        self.dynamicCall("SetInputValue(QString, QString)", "수정주가구분", "1")
 
-        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회요청", "opt10081", setsPrevNext, self.QscreenNumberF)
+        if date != None:
+            self.dynamicCall("SetInputValue(QString, QString)", "기준일자", date)
+
+        self.dynamicCall("CommRqData(QString, QString, int, QString)", "주식일봉차트조회",
+                         "opt10081", setsPrevNext, self.QscreenNumberF) #TR서버로 전송
+
+        self.defult_account_info_event_loop.exec_()
+
+    def get_code_list_by_market(self, market_code):
+        '''
+        종목코드들 반환
+        :param market_code:
+        :return:
+        '''
+
+        code_list = self.dynamicCall("GetCodeListByMarket(QString)", market_code)
+        code_list = code_list.split(";")[:-1]
+
+        return code_list
+
+    def calculator_Fn(self):
+
+        code_list = self.get_code_list_by_market("10")
+        print("코스닥 갯수 %s", len(code_list))
+
+        for index, code in enumerate(code_list):
+
+            """
+            추가 : 스크린번호를 한번이라도 요청하면 그룹이 만들어 진것이다.
+            그래서 끊어주는건 개인의 선택이다.
+            """
+            # 화면번호 끊기
+            self.dynamicCall("DisconnectRealData(QString)", self.QscreenNumberF)
+            print ("%s / %s : Kosdaq code_list : %s" % (index+1, len(code_list), code))
+            self.request_to_check_the_stock_pay_chart(eventCode = code)
 
 
     # Tr슬롯
@@ -221,7 +270,7 @@ class Kiwoom(QAxWidget):
 
             self.defult_account_info_event_loop.exit()
 
-        if (sRQName == "계좌평가잔고내역요청"):
+        elif (sRQName == "계좌평가잔고내역요청"):
 
             # 계좌평가잔고내역요청_총매입금액
             checkBalance_total_purchase_amount = self.dynamicCall("GetCommData(QString, QString, QString, QString)",
@@ -246,6 +295,7 @@ class Kiwoom(QAxWidget):
 
             # 종목이 몇개 인지 뽑아보기 위해서 함
 
+            # 600일의 관한 일봉 데이터
             for i in range(cint):
 
                 balance_id                  = self.dynamicCall("GetCommData(QString, QString, int, QString)",
@@ -312,7 +362,7 @@ class Kiwoom(QAxWidget):
             print(self.checkBalanceBox.keys())
             print(self.checkBalanceBox.values())
 
-        if (sRQName == "미체결요청"):
+        elif (sRQName == "미체결요청"):
 
             # 미체결요청에 GetRepeatCnt은 최대 100Count
             not_tightening_List = self.dynamicCall("GetRepeatCnt(QStirng, QString)", sTrCode, sRQName)
@@ -378,7 +428,83 @@ class Kiwoom(QAxWidget):
 
                 print(self.not_tighteningBox)
 
-            self.defult_account_info_event_loop.exit()
+        elif "주식일봉차트조회" == sRQName:
+
+            """
+            장기적인 투자면 이방법이 편하지만 단기적으로 해야된다면 이방법은 추천드리지 않는다.
+            문제점 방대한 데이터를 전부 instoll하기엔 너무 오래걸린다.
+            그렇기에 특정 종목코드를 지정하거나 데이터수를 리미트를 걸어서 가져온다.
+            """
+
+            # 싱글데이터
+            code = self.dynamicCall("GetCommData(QString, QString, int, QString)",sTrCode, sRQName, 0, "종목코드")
+            code = code.strip()
+            print("%s 일봉데이터 요청" % code)
+
+            # 호출 카운트
+            cint = self.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRQName)
+            print("데이터 일수 %s" % cint)
+
+            # 한번 조회하면 600일까지 일봉데이터들을 받을수 있다.
+            for i in range(cint):
+                data = []
+
+                current_price       = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                 sTrCode, sRQName, i, "현재가") #종가
+                transaction_volume  = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                      sTrCode, sRQName, i, "거래량")
+                transaction_amount  = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                      sTrCode, sRQName, i,"거래대금")
+                date                = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                        sTrCode, sRQName, i, "일자")
+                market_value        = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                                sTrCode, sRQName, i,"시가")
+                high_value          = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                              sTrCode, sRQName, i, "고가")
+                low_value           = self.dynamicCall("GetCommData(QString, QString, int, QString)",
+                                             sTrCode, sRQName, i, "저가")
+
+                data.append(current_price.strip())
+                data.append(transaction_volume.strip())
+                data.append(transaction_amount.strip())
+                data.append(date.strip())
+                data.append(market_value.strip())
+                data.append(high_value.strip())
+                data.append(low_value.strip())
+
+                self.onedaypayListData.append(data.copy())
+
+            print("현재 일봉 데이터량 %s" % len(self.onedaypayListData))
+
+            if sPrevNext == "2":
+                self.request_to_check_the_stock_pay_chart(eventCode = code, setsPrevNext=sPrevNext)
+            else:
+
+                print("총 일수 %s" % len(self.onedaypayListData))
+
+                pass_success = None
+
+                # 120일 이평선을 그릴만큼의 데이터가 있는지 체크해야됨 (120일 이평선을 보기위한 행위)
+                if self.onedaypayListData == None or len(self.onedaypayListData) < 120:
+
+                    pass_success = False
+
+                # 120일 이상 일시
+                else:
+                    total_price = 0
+                    # 리스트 슬라이싱
+                    for transaction_volume in self.onedaypayListData[:120]:
+                        total_price += int(transaction_volume[0])
+
+                        # 120일치 이평선 평균
+                        average_horizontal = total_price/120
+
+                        if int(self.onedaypayListData[0][6]) <= average_horizontal and average_horizontal <= int(self.onedaypayListData[0][5]):
+                            print("오늘 주가 120이평선 확인")
+
+
+
+                self.defult_account_info_event_loop.exit()
 
 
 
