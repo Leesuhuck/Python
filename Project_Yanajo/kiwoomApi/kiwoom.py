@@ -484,6 +484,7 @@ class Kiwoom(QAxWidget):
 
                 pass_success = None
 
+                """ 아직은 분석을 더해야됨 자세히 분석하지 못하였음
                 # 120일 이평선을 그릴만큼의 데이터가 있는지 체크해야됨 (120일 이평선을 보기위한 행위)
                 if self.onedaypayListData == None or len(self.onedaypayListData) < 120:
 
@@ -499,12 +500,76 @@ class Kiwoom(QAxWidget):
                         # 120일치 이평선 평균
                         average_horizontal = total_price/120
 
+                        # 오늘자 주기기 120일 이평선에 걸쳐있는지 확인
+                        bottom_stock_price = False
+                        check_price = None
+
                         if int(self.onedaypayListData[0][6]) <= average_horizontal and average_horizontal <= int(self.onedaypayListData[0][5]):
                             print("오늘 주가 120이평선 확인")
+                            bottom_stock_price = True
+                            price_top_move = False
+                            check_price = int(self.onedaypayListData[0][6])
 
+                        # 과거 일봉들이 120일 이평선보다 밑에 있는지 확인
+                        # 그렇게 확인을 하다가 일봉이 120일 이평선보다 위에 있으면 계산 진행
 
+                        if bottom_stock_price == True:
+                            average_horizontal = 0
+                            price_top_move = False
 
+                            index = 1
+                            while True:
+
+                                # 120일치가 있는지 계속 확인
+                                if len(self.onedaypayListData[index:]) < 120:
+                                    print("120일치가 없음!")
+                                    break
+
+                                total_price = 0
+                                for value in self.checkBalanceBox[index:120+index]:
+                                    total_price += int(value[1])
+
+                                move_average_horizontal = total_price / 120
+
+                                if move_average_horizontal <= int(self.checkBalanceBox[index][6]) and index <= 20:
+                                    print("20일 동안 주기가 120일 이평선과 같거나 위에 있으면 조건 통과 못함")
+                                    price_top_move = False
+                                    break
+
+                                elif int(self.onedaypayListData[index][7]) > move_average_horizontal and index > 20:
+                                    print("120일 이평선 위에 있는 일봉 확인됨")
+                                    price_top_move = True
+                                    prev_price = int(self.onedaypayListData[index][7])
+                                    break
+
+                                index += 1
+
+                            # 해당 부분 이평선이 가장 최근 일자의 이평선보다 가격이 낮은지 확인
+                            if price_top_move == True:
+                                if average_horizontal > move_average_horizontal and check_price > prev_price:
+                                    print("포착된 이평선의 가격이 오늘자(최근일자) 이평선 가격보다 낮은 것 확인됨")
+                                    print("포착된 부분의 일봉 저가가 오늘자 일봉의 고가보다 낮은지 확인됨")
+                                    pass_success = True
+
+                    if pass_success == True:
+                        print("조건부 통과됨")
+
+                        code_nm = self.dynamicCall("GetMasterCodeName(QString)", code)
+
+                        f = open("files/condition_stock.txt", "a", encoding="utf8")
+
+                        f.write("%s\t%s\t%s\n" % (code, code_nm, str(self.onedaypayListData[0][1])))
+
+                        f.close()
+
+                    elif pass_success == False:
+                        print("조건부 통과 못함")
+
+                    self.onedaypayListData.clear()
+                    self.defult_account_info_event_loop.exit()
+                """
                 self.defult_account_info_event_loop.exit()
+
 
 
 
