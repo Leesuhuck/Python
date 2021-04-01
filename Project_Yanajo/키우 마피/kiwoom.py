@@ -2,7 +2,7 @@ from PyQt5.QAxContainer import QAxWidget
 from PyQt5.QtCore import QEventLoop
 from config.errorCode import errors
 from PyQt5.QtTest import QTest
-# QaxWidget 파이썬 파일중 컨테이너부분을 직접적으로 접근할수 있는 API로 서비스.서비스임플.맵퍼.DB (구현부안에 상속된건 아님) 추정됨
+# QaxWidget 파이썬 파일중 컨테이너부분을 직접적으로 접근할수 있는 API로 서비스.서비스임플.맵퍼.DB (구현부안에 상속된건 아님) 추정됨.
 class Kiwoom(QAxWidget):
 
     """
